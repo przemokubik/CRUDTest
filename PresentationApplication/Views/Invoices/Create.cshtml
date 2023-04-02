@@ -1,0 +1,124 @@
+﻿@model PresentationApplication.DAL.InvoiceViewModel
+
+@{
+    ViewBag.Title = "Create";
+}
+
+<h2>Create</h2>
+
+    @Html.AntiForgeryToken()
+    <form id="itemForm">
+        <table class="table table-responsive">
+            <tr>
+                <th class="col-sm-2">
+                    Nazwa
+                </th>
+                <th></th>
+            </tr>
+            <tr class="form-group-sm" id="MainRow">
+                <td class="col-sm-2">
+                    @Html.EditorFor(model => model.Item.Name, new { htmlAttributes = new { @class = "itemName form-control" } })
+                    @Html.ValidationMessageFor(model => model.Item.Name, "", new { @class = "text-danger error" })
+                </td>
+                <td class="col-sm-2"></td>
+                <td>
+                    <input type="button" value="Dodaj" class="btn btn-success" id="Add" />
+
+                </td>
+            </tr>
+
+
+        </table>
+    </form>
+    <div id="invoiceItems">
+        <table class="table table-responsive" id="InvoiceDetailsItems"></table>
+        <span id="InvoiceItemError" style="color:red"></span>
+    </div>
+
+    <div class="form-horizontal">
+        <h4>Invoice</h4>
+        <hr />
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        <div class="form-group">
+            @Html.LabelFor(model => model.Invoice.Number, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.Invoice.Number, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.Invoice.Number, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <input type="submit" value="Create" class="btn btn-default" id="SaveInvoice" />
+            </div>
+        </div>
+    </div>
+
+
+<div>
+    @Html.ActionLink("Back to List", "Index")
+</div>
+@section Scripts{
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#Add').click(function () {
+                    var $newRow = $('#MainRow').clone().removeAttr('id');
+                    $('#Add', $newRow).addClass('remove').val('Usuń').removeAttr('id').removeClass('btn-success').addClass('btn-danger');
+                    $('#Item_Name', $newRow).each(
+                        function () {
+                            $(this).attr("id", generateUUID());
+
+                        });
+
+                    $('span.error', $newRow).remove();
+                    $('#InvoiceDetailsItems').append($newRow);
+                    $('#InvoiceItemError').empty('');
+                
+            });
+            $('#InvoiceDetailsItems').on('click', '.remove', function () {
+                $(this).parents('tr').remove();
+            });
+            $("#SaveInvoice").click(function () {
+                var invoiceItemLength = document.getElementById("InvoiceDetailsItems").children.length + 1;
+                var invoiceItemList = [];
+                if(invoiceItemLength==0){
+                    return;
+                }
+                for (var i = 1; i < invoiceItemLength; i++) {
+                    var invoiceItem = {
+                        Name: document.getElementsByClassName("itemName")[i].value,
+                    };
+                    invoiceItemList.push(invoiceItem);
+                }
+                invoiceData = {
+                    Number: document.getElementById("Invoice_Number").value,
+                    Items: invoiceItemList
+
+                };
+                data = {
+                    Invoice: invoiceData
+                }
+                $.ajax({
+                    type: 'Post',
+                    url: '/Invoices/Create',
+                    data: JSON.stringify(data),
+                    headers: {
+                        'VerificationToken': $("#forgeryToken").val()
+                    },
+                    contentType: 'application/json',
+                    success: function (success) {
+                        if (success) {
+                            window.location.replace("@Html.Encode(Url.Action("Index", "Invoices"))");
+                        }
+
+                    },
+                    error: function (error) {
+                        console.log(error);
+                    }
+
+                });
+
+            });
+        });
+    </script>
+}
